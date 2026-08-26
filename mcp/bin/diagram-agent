@@ -1,0 +1,24 @@
+#!/bin/sh
+# The `diagrammer` agent type, for Atenea's [[agent]] declaration.
+#
+# Same interpreter choice and same -u as the MCP server, for the same reason:
+# one JSON object in on stdin, one out on stdout, and a buffer between them is
+# a report Atenea waits for and never gets.
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+root=$(dirname -- "$here")
+
+python=${DIAGRAM_MCP_PYTHON:-}
+if [ -z "$python" ]; then
+    for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
+        found=$(command -v "$candidate" 2>/dev/null) || continue
+        python=$found
+        break
+    done
+fi
+[ -n "$python" ] || { echo "diagram-agent: no python3 on PATH" >&2; exit 127; }
+
+PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec "$python" -u -c 'import sys; from diagram_mcp.agent import main; sys.exit(main())' "$@"

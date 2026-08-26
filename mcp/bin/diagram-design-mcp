@@ -1,0 +1,36 @@
+#!/bin/sh
+# The MCP server, over stdio.
+#
+# A shim rather than a bare python file with a shebang, because which python3
+# answers first on PATH is not something this repo controls: on macOS
+# /usr/bin/python3 (3.9) shadows a newer homebrew build, and Atenea spawns this
+# with whatever PATH its settings declare. Choosing here means the server runs
+# under the same interpreter whether it was started by hand, by a test or by
+# the daemon.
+#
+# -u is not optional. This is a line-framed protocol on stdout, and a buffered
+# stdout means a reply that never arrives until the buffer happens to fill.
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+root=$(dirname -- "$here")
+
+if [ -n "${DIAGRAM_MCP_PYTHON:-}" ]; then
+    python=$DIAGRAM_MCP_PYTHON
+else
+    python=""
+    for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
+        found=$(command -v "$candidate" 2>/dev/null) || continue
+        python=$found
+        break
+    done
+fi
+
+if [ -z "$python" ]; then
+    echo "diagram-design-mcp: no python3 on PATH; set DIAGRAM_MCP_PYTHON" >&2
+    exit 127
+fi
+
+PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec "$python" -u -m diagram_mcp "$@"

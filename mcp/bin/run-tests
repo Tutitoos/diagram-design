@@ -1,0 +1,32 @@
+#!/bin/sh
+# The whole suite, with no dependency to install first.
+#
+# unittest and not pytest on purpose: this server ships stdlib-only so it runs
+# under whatever python3 a machine already has, and a test suite that needed a
+# package installed first would be the one thing in the repo that did not.
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+root=$(dirname -- "$here")
+
+# The venv first when there is one. It is the interpreter the server runs
+# under in production -- it is where Playwright lives -- so testing under
+# anything else leaves the PNG paths and the stderr gate untested while still
+# reporting green.
+python=${DIAGRAM_MCP_PYTHON:-}
+if [ -z "$python" ] && [ -x "$root/.venv/bin/python" ]; then
+    python=$root/.venv/bin/python
+fi
+if [ -z "$python" ]; then
+    for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
+        found=$(command -v "$candidate" 2>/dev/null) || continue
+        python=$found
+        break
+    done
+fi
+[ -n "$python" ] || { echo "run-tests: no python3 on PATH" >&2; exit 127; }
+
+PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+cd "$root"
+exec "$python" -m unittest discover -s tests -t . -v "$@"

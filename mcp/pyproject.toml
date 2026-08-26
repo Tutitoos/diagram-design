@@ -1,0 +1,13 @@
+# Metadata only. There is nothing to install and nothing to build: the server
+# is stdlib-only Python run through bin/diagram-design-mcp, and the tests run
+# under unittest. A dependency list would be a promise this repo does not make.
+[project]
+name = "diagram-design-mcp"
+version = "0.1.0"
+description = "An MCP server over the diagram-design skill, for Atenea"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+# PNG export only. Everything else works without it.
+png = ["playwright"]

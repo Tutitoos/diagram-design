@@ -1,0 +1,3 @@
+# The Playwright virtualenv for PNG export. Everything else here is
+# stdlib-only and needs no environment of its own.
+.venv/
