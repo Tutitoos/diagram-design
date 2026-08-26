@@ -25,8 +25,9 @@ is the authority on those formats; this wraps them.
 ## Where this sits
 
 This is a fork of [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design)
-with the server added under `mcp/`. Nothing outside `mcp/` is ours, and nothing
-in it has been modified — an upstream sync is an ordinary merge.
+with the server added under `mcp/`. Nothing outside `mcp/` is ours and nothing
+of theirs has been modified — not a line, not a workflow — so an upstream sync
+is an ordinary merge.
 
 ```
 skills/diagram-design/     upstream: SKILL.md, references/, assets/, scripts/
@@ -103,12 +104,40 @@ Register it as a raw passthrough; the tools arrive as `raw_diagram_*`. See
 ./mcp/bin/run-tests
 ```
 
-57 tests, `unittest`, no dependency to install first — deliberately, since the
+58 tests, `unittest`, no dependency to install first — deliberately, since the
 server ships stdlib-only and a suite that needed a package would be the one
-thing here that did. `DIAGRAM_MCP_PYTHON=/usr/bin/python3 ./mcp/bin/run-tests`
-runs them against the 3.9 floor.
+thing here that did. It prefers `mcp/.venv` when one exists, because that is
+the interpreter the server runs under in production and testing under anything
+else leaves the PNG paths untested while still reporting green.
+`DIAGRAM_MCP_PYTHON=/usr/bin/python3 ./mcp/bin/run-tests` runs them against the
+3.9 floor instead; the one test that needs Playwright reports itself as skipped
+there rather than passing vacuously.
 
-Upstream's own gates (`scripts/`) are theirs and are not run from here.
+### Why there is no CI here
+
+Two reasons, and either alone would be enough.
+
+GitHub does not run workflows on a fork until somebody enables them by hand in
+the Actions tab. Nothing fires on a push today, so a workflow file committed
+now would be inert.
+
+And enabling them would start upstream's `ci.yml`, whose plugin-package gate
+requires every change to bump `.claude-plugin`, `.codex-plugin` and
+`.factory-plugin` in step. That gate is right for changes to the plugin and
+wrong for this one: `mcp/` is not part of the distributed plugin package, and
+bumping their version numbers to describe a directory they do not ship would
+be a lie that also fights the next upstream sync. Their other package gate,
+`scripts/test-plugin-package.py`, passes against this tree — the `mcp/`
+directory itself bothers nothing.
+
+So the suite runs locally. If you ever do want CI: enable workflows in the
+Actions tab, disable theirs without touching the tree —
+
+```sh
+gh api -X PUT repos/Tutitoos/diagram-design/actions/workflows/ci.yml/disable
+```
+
+— and add a workflow of your own that runs `./mcp/bin/run-tests`.
 
 ## Environment
 
